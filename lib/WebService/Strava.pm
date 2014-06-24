@@ -5,135 +5,70 @@ use warnings;
 
 =head1 NAME
 
-WebService::Strava - Interface to the Strava API version 2
+WebService::Strava - Interface to the Strava API version 3
 
 =cut
 
-use Any::Moose;
-use Any::URI::Escape;
-use JSON;
+use Moose;
 use LWP::UserAgent;
 use Data::Dumper;
 
-has 'ride' => ( is => 'rw', isa => 'Int', required => 0 );
+use WebService::Strava::Activity;
+use WebService::Strava::Athlete;
+use WebService::Strava::Club;
+use WebService::Strava::Comment;
+use WebService::Strava::Effort;
+use WebService::Strava::Gear;
+use WebService::Strava::Lap;
+use WebService::Strava::Photo;
+use WebService::Strava::Segment;
+use WebService::Strava::Stream;
 
-use constant DEBUG => $ENV{STRAVA_DEBUG} || 0;
+our $VERSION = 0.03;
 
-our $Endpoint = "http://www.strava.com/api/v2";
+has 'token'  => (is => 'rw', isa => 'Str', required => 1);
+has 'client' => (is => 'rw', isa => 'Str', required => 1);
+has '_path'  => (is => 'ro', isa => 'Str', default => 'https://www.strava.com/api/v3');
+has 'ua'     => (is => 'ro', isa => 'LWP::UserAgent', lazy_build => 1);
 
-our $VERSION = 0.02;
+sub _build_ua {
+	my $self = shift;
+	my $ua = LWP::UserAgent->new(agent => join('_', __PACKAGE__, $VERSION), timeout => 300);
+	$ua->default_header(':Authorization' => 'Bearer ' . $self->token);
+	return $ua;
+}
 
-our $Ua = LWP::UserAgent->new( agent => join( '_', __PACKAGE__, $VERSION ) );
-our $Json = JSON->new->allow_nonref;
+sub athletes
+{
+	my $self = shift;
+	return WebService::Strava::Athlete->new(@_, ctx => $self);
+}
 
-=head1 METHODS
+sub activities
+{
+	my $self = shift;
+	return WebService::Strava::Activity->new(@_, ctx => $self);
+}
 
-=over 4
+sub clubs
+{
+	my $self = shift;
+	return WebService::Strava::Club->new(@_, ctx => $self);
+}
 
-=item efforts
+sub gear
+{
+	my $self = shift;
+	return WebService::Strava::Gear->new(@_, ctx => $self);
+}
 
-  $s = WebService::Strava->new;
-  $s->ride(3508715);
-  $efforts = $s->efforts;
-
-=back
-
-=cut
-
-sub efforts {
-    my ( $self, $args ) = @_;
-
-    my $ride = $self->ride || die;
-    my $url = "$Endpoint/rides/$ride/efforts";
-    warn("query $url") if DEBUG;
-
-    $Ua->timeout(10);
-    my $res = $Ua->get($url);
-
-    die "query for $url failed!" unless $res->is_success;
-
-    $res = $Json->decode( $res->content );
-
-    my @efforts;
-#    $DB::single = 1;
-    foreach my $effort ( @{ $res->{efforts} } ) {
-
-        my $effort_obj = WebService::Strava::Effort->new(
-            {
-                %{ $effort->{effort} },
-                segment =>
-                  WebService::Strava::Segment->new( $effort->{segment} )
-            }
-        );
-        push @efforts, $effort_obj;
-    }
-    return \@efforts;
+sub segments
+{
+	my $self = shift;
+	return WebService::Strava::Segment->new(@_, ctx => $self);
 }
 
 __PACKAGE__->meta->make_immutable;
-
-package WebService::Strava::Effort;
-
-use Any::Moose;
-
-has 'id'               => ( is => 'ro', isa => 'Int', required => 1 );
-has 'start_date_local' => ( is => 'ro', isa => 'Str', required => 1 );
-has 'elapsed_time'     => ( is => 'ro', isa => 'Str', required => 1 );
-has 'moving_time'      => ( is => 'ro', isa => 'Str', required => 1 );
-has 'distance'         => ( is => 'ro', isa => 'Str', required => 1 );
-has 'segment' =>
-  ( is => 'ro', isa => 'WebService::Strava::Segment', required => 1 );
-
-package WebService::Strava::Segment;
-
-use Any::Moose;
-
-has 'id'              => ( is => 'ro', isa => 'Int',      required => 1 );
-has 'elev_difference' => ( is => 'ro', isa => 'Num',      required => 1 );
-has 'name'            => ( is => 'ro', isa => 'Str',      required => 1 );
-has 'climb_category'  => ( is => 'ro', isa => 'Str',      required => 1 );
-has 'avg_grade'       => ( is => 'ro', isa => 'Str',      required => 1 );
-has 'start_latlng'    => ( is => 'ro', isa => 'ArrayRef', required => 1 );
-has 'end_latlng'      => ( is => 'ro', isa => 'ArrayRef', required => 1 );
+no Moose;
 
 1;
-
-=head1 SYNOPSIS
-
-  use WebService::Strava;
-  $S = WebService::Strava->new;
-
-  # specify a ride to examine
-  $S->ride(331215);
-
-  # get the efforts from the ride
-  $efforts = $S->efforts;
-
-
-=head1 DESCRIPTION
-
-Alpha level API client to the webservice at http://www.strava.com
-
-This module is currently my way of scratching an itch for the
-Polo Field Smack Down competition.
-
-=head1 SEE ALSO
-
-L<https://strava.pbworks.com/w/browse>
-
-L<http://polofieldsmackdown.com>
-
-=head1 AUTHOR
-
-Fred Moyer, E<lt>fred@redhotpenguin.comE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Fred Moyer
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.12.0 or,
-at your option, any later version of Perl 5 you may have available.
-
-
-=cut

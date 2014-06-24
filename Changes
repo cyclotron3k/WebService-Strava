@@ -1,7 +1,10 @@
 Revision history for Perl extension WebService-Strava.
 
+0.03  Sat Jun 14 2014
+	- update for API v3
+
 0.02  Sat Feb 02 2013
-    - https://rt.cpan.org/Ticket/Display.html?id=75131
+	- https://rt.cpan.org/Ticket/Display.html?id=75131
 
 0.01  Sun Feb 12 21:15:50 2012
 	- original version; created by h2xs 1.23 with options

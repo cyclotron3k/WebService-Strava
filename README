@@ -1,37 +1,76 @@
 NAME
-    WebService::Strava - Interface to the Strava API version 2
+    WebService::Strava - Interface to the Strava API version 3
 
 METHODS
-    efforts
+    athletes
           $s = WebService::Strava->new;
-          $s->ride(3508715);
-          $efforts = $s->efforts;
+          $s->athletes->get; # returns you
+          $s->athletes(12345)->get; # returns athlete 12345
+    segments
+    activities
+    clubs
+    gear
+
 
 SYNOPSIS
-      use WebService::Strava;
-      $S = WebService::Strava->new;
 
-      # specify a ride to examine
-      $S->ride(331215);
+    use WebService::Strava;
+    use Data::Dumper;
 
-      # get the efforts from the ride
-      $efforts = $S->efforts;
+    # get these values from https://www.strava.com/settings/api
+    my $s = WebService::Strava->new(
+      client => '00112233445566778899aabbccddeeff00112233', # aka 'Client Secret'
+      token  => '00112233445566778899aabbccddeeff00112233'  # aka 'Your Access Token'
+    );
+
+    # get your profile information
+    my $me = $s->athletes;
+    my $profile = $me->get;
+
+    # get your activities
+    my @activities = $me->activities->get;
+
+    # get a list of your friends
+    my @friends = $me->friends->get;
+
+    # get athlete 12345
+    $s->athletes(12345)->get;
+
+
+    # get all segments in London (result set always limited to 10. no pagination)
+    $s->segments->explore(bounds => '51.377598,-0.377287,51.621254,0.153490')->get;
+
+    # get second page of efforts from segment 12345
+    $s->segments(12345)->all_efforts(page => 2)->get;
+
+
+    # get activity 12345
+    my $activity = $s->activities(12345);
+    my $data = $activity->get;
+
+    # get comments from activity 12345
+    $activity->comments->get;
+
+    # get kudos (a list of athletes) for activity 12345
+    $activity->kudos->get;
+
+    # get time series stream data of activity 12345
+    $activity->streams(types => 'time')->get;
+
 
 DESCRIPTION
-    Alpha level API client to the webservice at http://www.strava.com
-
-    This module is currently my way of scratching an itch for the Polo Field
-    Smack Down competition.
+    Alpha level read-only interface to Strava's v3 API. It still needs a lot of work.
 
 SEE ALSO
-    <https://strava.pbworks.com/w/browse>
-
-    <http://polofieldsmackdown.com>
+    <http://strava.github.io/api/>
 
 AUTHOR
-    Fred Moyer, <fred@redhotpenguin.com>
+    v3: Aidan Samuel
+    v2: Fred Moyer <fred@redhotpenguin.com>
+    v1: Fred Moyer <fred@redhotpenguin.com>
 
 COPYRIGHT AND LICENSE
+    Copyright (C) 2014 by Aidan Samuel
     Copyright (C) 2011 by Fred Moyer
 
     This library is free software; you can redistribute it and/or modify it
